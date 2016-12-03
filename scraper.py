@@ -1,6 +1,7 @@
 import csv
-import requests
 from lxml import html
+
+import requests
 
 
 class Csv:
