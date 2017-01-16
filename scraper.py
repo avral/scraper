@@ -1,3 +1,4 @@
+import os
 import csv
 from lxml import html
 
@@ -17,34 +18,50 @@ class Csv:
     def rows(self):
         return self.reader
 
-    def write(self, *row):
+    def write(self, row):
         self.writer.writerow(*row)
 
+    def write_if_empty(self, row):
+        if os.stat(self.path).st_size == 0:
+            self.write(row)
 
-class Env:
-    def __init__(self, proxy=None, headers=None, verify=True):
-        self.s = requests.Session()
-        self.s.verify = verify
 
-        if headers is not None:
-            self.s.headers.update(headers)
+class Env(requests.Session):
+    tor_controller_port = 9051
 
-        if proxy is not None:
-            self.s.proxies.update(proxy)
+    def __init__(self, use_tor=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def get(self, url, params=None):
-        return self.s.get(url, params=params)
+        self.verify = False
 
-    def post(self, url, data=None):
-        return self.s.post(url, data=data)
+        if use_tor:
+            self.proxies = {'http':  'socks5://127.0.0.1:9050',
+                            'https': 'socks5://127.0.0.1:9050'}
 
-    def get_dom(self, url, encoding=None):
-        r = self.s.get(url)
+    def get_dom(self, url, params=None, encoding=None):
+        r = self.get(url, params=params)
+        r.encoding = encoding
 
-        if encoding is not None:
-            r.encoding = encoding
+        return self.html_to_dom(r.text)
 
-        return html.fromstring(r.text)
+    def post_dom(self, url, data=None, encoding=None):
+        r = self.post(url, data=data)
+        r.encoding = encoding
+
+        return self.html_to_dom(r.text)
 
     def html_to_dom(self, html_string):
         return html.fromstring(html_string)
+
+    def change_tor_ip(self):
+        try:
+            from stem import Signal
+            from stem.control import Controller
+        except ModuleNotFoundError:
+            raise Exception('Tor lib not found. Install by "pip install stem"')
+
+        with Controller.from_port(port=self.tor_controller_port) as controller:
+            controller.authenticate()
+            controller.signal(Signal.NEWNYM)
+
+        self.close()
