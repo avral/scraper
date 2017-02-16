@@ -39,16 +39,16 @@ class Env(requests.Session):
                             'https': 'socks5://127.0.0.1:9050'}
 
     def get_dom(self, url, params=None, encoding=None):
-        r = self.get(url, params=params)
-        r.encoding = encoding
+        self.r = self.get(url, params=params)
+        self.r.encoding = encoding
 
-        return self.html_to_dom(r.text)
+        return self.html_to_dom(self.r.text)
 
     def post_dom(self, url, data=None, encoding=None):
-        r = self.post(url, data=data)
-        r.encoding = encoding
+        self.r = self.post(url, data=data)
+        self.r.encoding = encoding
 
-        return self.html_to_dom(r.text)
+        return self.html_to_dom(self.r.text)
 
     def html_to_dom(self, html_string):
         return html.fromstring(html_string)
