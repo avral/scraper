@@ -18,12 +18,12 @@ class Csv:
     def rows(self):
         return self.reader
 
-    def write(self, row):
-        self.writer.writerow(*row)
+    def write(self, *row):
+        self.writer.writerow(row)
 
-    def write_if_empty(self, row):
+    def write_if_empty(self, *row):
         if os.stat(self.path).st_size == 0:
-            self.write(row)
+            self.write(*row)
 
 
 class Env(requests.Session):
